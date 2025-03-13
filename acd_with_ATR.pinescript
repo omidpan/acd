@@ -2,15 +2,16 @@
 // © OmidPanahi7m6a8
 //@version=6
 indicator("ACD leoPn", overlay=true)
+import TradingView/ta/9
 atr_wma = ta.sma(ta.tr(true), 14)
 prev_atr_wma = atr_wma[1]
 // var label atrLabel = na
 // atrLabel := label.new(bar_index, atr_wma,  str.tostring(prev_atr_wma, "#.##"), color=color.white, textcolor=color.black, size=size.normal, style=label.style_circle)
 // Request daily True Range (TR)
-daily_tr = request.security(syminfo.tickerid, "D", ta.tr(true))
+daily_tr = request.security(syminfo.tickerid, "D", ta.tr(true),barmerge.gaps_on)
 
 // Apply WMA to the daily TR over 14 periods
-daily_atr_wma = ta.sma(daily_tr, 14)
+daily_atr_wma = ta.sma(daily_tr, 7)
 
 // Get the previous day's ATR WMA
 prev_daily_atr_wma = daily_atr_wma[1]
@@ -18,7 +19,10 @@ prev_daily_atr_wma = daily_atr_wma[1]
 // **Set Market Start Time in NYSE Time Zone (9:30 AM ET)**
 startTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), 9, 30)
 endTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), 16, 00)
-openingRangeCustom = input(15, title="OP Range") // default is 30 minutes
+
+openingRangeCustom = input(15, title="OP Range") // default is 15 minutes
+A_weight = input(0.10, title="A level weight (10 % default)") // default is 10 percent
+C_weight = input(0.10, title="C level weight (20 % default)") // default is 20 percent
 openingRangeEnd = startTime + openingRangeCustom * 60 * 1000 
 // **Detect New Trading Day**
 newDay = ta.change(dayofmonth(time)) > 0
@@ -35,7 +39,7 @@ if (time >= startTime and time < openingRangeEnd and isToday)
     openRangeLow := na(openRangeLow) ? low : math.min(openRangeLow, low)
 // **Define ACD Levels (Customizable Multipliers)**
 // A_Level = input(0.10, title="A")  
-A_LEVEL=prev_daily_atr_wma*.10
+A_LEVEL=prev_daily_atr_wma*A_weight
 var float A_Up = na
 var float A_Down = na
 if (time > openingRangeEnd)
@@ -43,7 +47,7 @@ if (time > openingRangeEnd)
     A_Down := openRangeLow - A_LEVEL
 // **Define C Levels**
 // C_Level = input(0.25, title="C Level Multiplier")
-C_Level=prev_daily_atr_wma*.20
+C_Level=prev_daily_atr_wma*C_weight
 var float C_Up = na
 var float C_Down = na
 if (time > openingRangeEnd)
@@ -66,13 +70,3 @@ plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? A_Up : na
 plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? A_Down : na, title="A-Down Level", color=color.red, linewidth=2, style=plot.style_linebr)
 plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? C_Up : na, title="C-Up Level", color=color.green, linewidth=1, style=plot.style_linebr)
 plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? C_Down : na, title="C-Down Level", color=color.green, linewidth=1, style=plot.style_linebr)
-
-// length = input.int(title="Length", defval=14, minval=1)
-// smoothing = input.string(title="Smoothing", defval="RMA", options=["RMA", "SMA", "EMA", "WMA"])
-// ma_function(source, length) =>
-// 	switch smoothing
-// 		"RMA" => ta.rma(source, 5)
-// 		"SMA" => ta.sma(source, 5)
-// 		"EMA" => ta.ema(source, 5)
-// 		=> ta.wma(source, 5)
-// plot(ma_function(ta.tr(true), length), title = "ATR", color=color.new(#B71C1C, 0))
