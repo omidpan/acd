@@ -59,15 +59,15 @@ showTodayLines = (dayofmonth(time) == dayofmonth(time[1])) and (time > openingRa
 // fillColor = color.rgb(156, 156, 156, 80)
 // bgcolor(time >= startTime and time <= openingRangeEnd ? fillColor : na)
 // **Confined Background Fill Between Opening Range High & Low**
-openRangeFill = plot(time >= startTime and time <= openingRangeEnd ? openRangeHigh : na, title="Opening Range Fill High", style=plot.style_linebr, linewidth = 2)
-openRangeFillLow = plot(time >= startTime and time <= openingRangeEnd ? openRangeLow : na, title="Opening Range Fill Low", style=plot.style_linebr, linewidth=2)
-fill(openRangeFill, openRangeFillLow, color=color.rgb(156, 156, 156, 60))  // Creates the shaded area
+// openRangeFill = plot(time >= startTime and time <= openingRangeEnd ? openRangeHigh : na, title="Opening Range Fill High", style=plot.style_linebr, linewidth = 2)
+// openRangeFillLow = plot(time >= startTime and time <= openingRangeEnd ? openRangeLow : na, title="Opening Range Fill Low", style=plot.style_linebr, linewidth=2)
+// fill(openRangeFill, openRangeFillLow, color=color.rgb(156, 156, 156, 60))  // Creates the shaded area
 // **Plot Opening Range High and Low (Only After 10:00 AM, Until Market Close)**
-plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? openRangeHigh : na, title="Opening Range High", color=color.blue, linewidth=1, style=plot.style_linebr)
-plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? openRangeLow : na, title="Opening Range Low", color=color.blue, linewidth=1, style=plot.style_linebr)
+t1= plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? openRangeHigh : na, title="Opening Range High", color=color.blue, linewidth=1, style=plot.style_linebr)
+t2= plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? openRangeLow : na, title="Opening Range Low", color=color.blue, linewidth=1, style=plot.style_linebr)
+fill(t1, t2, color=color.rgb(156, 156, 156, 94)) 
 // **Plot ACD Levels (Only After 10:00 AM, Until Market Close, and Persist Across Timeframes)**
 plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? A_Up : na, title="A-Up Level", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
 plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? A_Down : na, title="A-Down Level", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
 plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? C_Up : na, title="C-Up Level", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
 plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? C_Down : na, title="C-Down Level", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
-
