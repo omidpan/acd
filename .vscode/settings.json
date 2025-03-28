@@ -1,0 +1,6 @@
+{
+    // Editor font settings
+    "editor.fontFamily": "'Fira Code', 'Consolas', 'Courier New', monospace",
+    "editor.fontSize": 20,
+    "editor.fontLigatures": true
+}
