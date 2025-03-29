@@ -1,5 +1,5 @@
 *.csv
-ibt/twsapi_macunix.1030.01.zip
+# ibt/twsapi_macunix.1030.01.zip
 ibt/IBJts/API_VersionNum.txt
 ibt/IBJts/CMakeLists.txt
 ibt/IBJts/samples/Cpp/TestCppClient/AccountSummaryTags.cpp
