@@ -3,7 +3,7 @@
 indicator("ACD", overlay=true,timeframe ="",format = format.price,timeframe_gaps =true)
 // groups
 group1 = "Market Begin(hour/minute)"
-group2="Makert Close (Hour/minute)"
+group2="Market Close (Hour/minute)"
 group3 = "ACD Opening Range"
 group4="Show Pivots"
 //*************************************************************** pivot Input  *****************************************************************
@@ -11,7 +11,7 @@ isPivot=input.bool(false,'Show 3Days pivot','This is the 3 days pivot based on m
 
 //************************************************ START TIME  input *****************************************************************
 startHour = input.int(8, title="Market Begin Hour(0-23)", minval=0, maxval=23,group = group1)
-startMintues = input.int(0, title="Market Begin Minutes(0-59)", minval=0, maxval=59,group = group1)
+startMinutes = input.int(0, title="Market Begin Minutes(0-59)", minval=0, maxval=59,group = group1)
 
 //************************************************ ENd TIME  input *****************************************************************
 endHour = input.int(20, title="Market Close Hour(0-23)", minval=0, maxval=23,group = group2)
@@ -27,7 +27,7 @@ A_weight = input(0.10, title="A level weight (10 % default)",group = group3) // 
 C_weight = input(0.20, title="C level weight (20 % default)",group = group3) // default is 20 percent
 
 //******************* CALCULATE Time and Range (EPOCH ) **************************************************************************************
-startTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), startHour, startMintues)
+startTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), startHour, startMinutes)
 endTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), endHour, endMinutes)
 openingRangeEnd = startTime + opDuration * 60 * 1000
 
