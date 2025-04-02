@@ -15,7 +15,7 @@ startMintues = input.int(0, title="Market Begin Minutes(0-59)", minval=0, maxval
 
 //************************************************ ENd TIME  input *****************************************************************
 endHour = input.int(20, title="Market Close Hour(0-23)", minval=0, maxval=23,group = group2)
-endMinutes = input.int(00, title="Market Close Minutes(0-59)", minval=0, maxval=59,group = group2)
+endMinutes = input.int(0, title="Market Close Minutes(0-59)", minval=0, maxval=59,group = group2)
 
 //************************************************ OP Range Input *****************************************************************
 opDuration = input(90, title="Opening Range",group = group3) // default is 15 minutes
