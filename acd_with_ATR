@@ -1,82 +1,96 @@
-// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © OmidPanahi7m6a8
-//@version=6
-indicator("ACD QBIT", overlay=true)
 
+//@version=6
+indicator("ACD", overlay=true,timeframe ="",format = format.price,timeframe_gaps =true)
 // groups
 group1 = "Market Begin(hour/minute)"
 group2="Makert Close (Hour/minute)"
 group3 = "ACD Opening Range"
 group4="Show Pivots"
+//*************************************************************** pivot Input  *****************************************************************
 isPivot=input.bool(false,'Show 3Days pivot','This is the 3 days pivot based on max high , max low and last closed,A=(max+low+closed)/3, B(max+low)/2, delta=|A-B|, up=A+d, down=A-d, level=A',group = group4)
-//Market start time
-st_hourInput = input.int(9, title="Market Begin Hour(0-23)", minval=0, maxval=23,group = group1)
-st_minuteInput = input.int(30, title="Market Begin Minutes(0-59)", minval=0, maxval=59,group = group1)
-//market closed time
-end_hourInput = input.int(16, title="Market Close Hour(0-23)", minval=0, maxval=23,group = group2)
-end_minuteInput = input.int(00, title="Market Close Minutes(0-59)", minval=0, maxval=59,group = group2)
-//opening range
-openingRangeCustom = input(15, title="Opening Range",group = group3) // default is 15 minutes
+
+//************************************************ START TIME  input *****************************************************************
+startHour = input.int(8, title="Market Begin Hour(0-23)", minval=0, maxval=23,group = group1)
+startMintues = input.int(0, title="Market Begin Minutes(0-59)", minval=0, maxval=59,group = group1)
+
+//************************************************ ENd TIME  input *****************************************************************
+endHour = input.int(20, title="Market Close Hour(0-23)", minval=0, maxval=23,group = group2)
+endMinutes = input.int(00, title="Market Close Minutes(0-59)", minval=0, maxval=59,group = group2)
+
+//************************************************ OP Range Input *****************************************************************
+opDuration = input(90, title="Opening Range",group = group3) // default is 15 minutes
+
+//************************************************ ACD Level input *****************************************************************
+
 atrLength = input.int(14, title="ATR (default 14 days)",group = group3)
 A_weight = input(0.10, title="A level weight (10 % default)",group = group3) // default is 10 percent
 C_weight = input(0.20, title="C level weight (20 % default)",group = group3) // default is 20 percent
-//Pivots
 
-// **Set Market Start Time in NYSE Time Zone (9:30 AM ET)**
-startTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), st_hourInput, st_minuteInput)
-endTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), end_hourInput, end_minuteInput)
-openingRangeEnd = startTime + openingRangeCustom * 60 * 1000 
-// **Detect New Trading Day**
-newDay = ta.change(dayofmonth(time)) > 0
-// **Track Opening Range - Store Persistently to Prevent Disappearance on Timeframe Change**
+//******************* CALCULATE Time and Range (EPOCH ) **************************************************************************************
+startTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), startHour, startMintues)
+endTime = timestamp("America/New_York", year(time), month(time), dayofmonth(time), endHour, endMinutes)
+openingRangeEnd = startTime + opDuration * 60 * 1000
+
+// ******************************* ACD Predicates ************************************************************************************************
+beforeSession = time < startTime
+afterSession = time> endTime
+newDay = ta.change(dayofmonth(time)) != 0
+
+
+//***********************************************  OP RANGE Configuration*****************************************************************************
+//Define op high and low
 var float openRangeHigh = na
 var float openRangeLow = na
 if (newDay)
     openRangeHigh := na
     openRangeLow := na
-// **Capture Opening Range Values (Only for Today)**
-isToday = dayofmonth(time) == dayofmonth(time[1]) // Ensures values are drawn only for today
-if (time >= startTime and time < openingRangeEnd and isToday)
+if  beforeSession or afterSession
+    openRangeHigh := na
+    openRangeLow := na
+if (time >= startTime and time <= openingRangeEnd)
     openRangeHigh := na(openRangeHigh) ? high : math.max(openRangeHigh, high)
     openRangeLow := na(openRangeLow) ? low : math.min(openRangeLow, low)
 
-// **Define ACD Levels (Customizable Multipliers)**
+
 // Find ATR simle range and multiplies to A_weight
 dailyATR = request.security(syminfo.tickerid, "D", ta.atr(atrLength))
-// Plot the ATR value as a label above each candle if timeFrame is Daily
-isDaily = timeframe.isdaily
+
+
+//************************************************** define A  levels ********************************************************************
+
 A_LEVEL=dailyATR[1]*A_weight
 var float A_Up = na
 var float A_Down = na
-if (time > openingRangeEnd)
+if (time > openingRangeEnd and not beforeSession and not afterSession)
     A_Up := openRangeHigh + A_LEVEL
     A_Down := openRangeLow - A_LEVEL
-// **Define C Levels**
+
+//************************************************** define C  levels ********************************************************************
 C_Level=dailyATR[1]*C_weight
 var float C_Up = na
 var float C_Down = na
-if (time > openingRangeEnd)
+if (time > openingRangeEnd and not (beforeSession and afterSession))
     C_Up := openRangeHigh + C_Level
     C_Down := openRangeLow - C_Level
 
-// **Ensure Only Today’s Lines Are Shown & Persist Across Timeframes**
-showTodayLines = (dayofmonth(time) == dayofmonth(time[1])) and (time > openingRangeEnd)
-t1= plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? openRangeHigh : na, title="Opening Range High", color=color.blue, linewidth=1, style=plot.style_linebr)
-t2= plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? openRangeLow : na, title="Opening Range Low", color=color.blue, linewidth=1, style=plot.style_linebr)
-fill(t1, t2, color=color.rgb(156, 156, 156, 94)) 
 
 
-//Plot all the lines 
-plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? A_Up : na, title="A-Up Level", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
-plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? A_Down : na, title="A-Down Level", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
-plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? C_Up : na, title="C-Up Level", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
-plot((showTodayLines and time > openingRangeEnd and time <= endTime) ? C_Down : na, title="C-Down Level", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
-//show ATR 
-plot(dailyATR[1], title="ATR", color=color.rgb(243, 177, 33))
+//************************************************************ plot OP *****************************************************************************************
+t1= plot((time >= openingRangeEnd and time <= endTime) ? openRangeHigh : na, title="OP^", color=color.blue, linewidth=1, style=plot.style_linebr)
+t2= plot(( time >= openingRangeEnd and time <= endTime) ? openRangeLow : na, title="OP!", color=color.blue, linewidth=1, style=plot.style_linebr)
+fill(t1, t2, color=color.rgb(156, 156, 156, 98)) 
 
+//******************************************* plot A levels ***************************************************************************************************** 
+a1=plot((time > openingRangeEnd and time <= endTime) ? A_Up : na, title="A^", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
+a2=plot((time > openingRangeEnd and time <= endTime) ? A_Down : na, title="A!", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
+fill(a1,a2, color=color.rgb(156, 156, 156, 94)) 
 
-// ******************* THIS IS 3 DYAS PIVOTS **************************************************************************
-//*******************************************************************************************************************
+//************************************************* PLOT C LEVELs ****************************************************************************************************
+c1=plot((time > openingRangeEnd and time <= endTime) ? C_Up : na, title="C^", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
+c2=plot((time > openingRangeEnd and time <= endTime) ? C_Down : na, title="C!", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
+fill(c1,c2, color=color.rgb(156, 156, 156, 94)) 
+
+// ********************************************** 3 Days ACD Pivots  **************************************************************************
 
 // Define the high, low, and close of the previous 3 days (excluding today)
 prevHigh = request.security(syminfo.tickerid, 'D', high[1],lookahead = barmerge.lookahead_on)  // High of the previous day
@@ -87,7 +101,7 @@ prevLow2 = request.security(syminfo.tickerid, "1D", low[2],lookahead = barmerge.
 prevLow3 = request.security(syminfo.tickerid, "1D", low[3],lookahead = barmerge.lookahead_on)   // Low of 3 days ago
 prevClose = request.security(syminfo.tickerid, "1D", close[1],lookahead = barmerge.lookahead_on) // Close of the previous day
 
-// Calculate the highest high and lowest low of the previous 3 days
+//************************************************** Calculate Pivot Highest High and Lowest Low ********************************************************************
 highestHigh = math.max(prevHigh, math.max(prevHigh2, prevHigh3))  // Highest high from the last 3 days
 lowestLow = math.min(prevLow, math.min(prevLow2, prevLow3))       // Lowest low from the last 3 days
 
@@ -95,15 +109,26 @@ lowestLow = math.min(prevLow, math.min(prevLow2, prevLow3))       // Lowest low 
 A = (highestHigh + lowestLow + prevClose) / 3
 B = (highestHigh + lowestLow) / 2
 d = math.abs(A - B)
-
+//************************************************** Pivot (Level UP/Down and Set) ********************************************************************
 levelUp=A + d
 levelDown=A-d
 level=A
+//*********** display conditions predicate ****************************
+   
 
-// log.info("monitor levels a:{0} , b:{1} d:{2}",levelUp,levelDown,d)    
-showPivotLinesLines = (dayofmonth(time) == dayofmonth(time[1])) and (time >  startTime)
-// Plot the levels with dashed or dotted lines based on the condition
-plot(isPivot and showPivotLinesLines  ? (A+d) : na, color=color.rgb(211, 224, 212, 68), linewidth=6, title="PV-high Up", style=plot.style_steplinebr)
-plot(isPivot and showPivotLinesLines ? A : na, color=color.rgb(211, 224, 212, 82), linewidth=6, title="PV-Level", style=plot.style_steplinebr)
-plot(isPivot and showPivotLinesLines ? (A-d) : na, color=color.rgb(211, 224, 212, 80), linewidth=5, title="Pv-Low", style=plot.style_steplinebr)
+plot( isPivot and (time > openingRangeEnd and time <= endTime) ? (A+d) : na, color=color.rgb(211, 224, 212, 68), linewidth=4, title="PV^", style=plot.style_steplinebr)
+plot(isPivot and (time > openingRangeEnd and time <= endTime) ? A : na, color=color.rgb(211, 224, 212, 82), linewidth=4, title="PV", style=plot.style_steplinebr)
+plot(isPivot and (time > openingRangeEnd and time <= endTime) ? (A-d) : na, color=color.rgb(211, 224, 212, 80), linewidth=4, title="Pv!", style=plot.style_steplinebr)
 
+//******************************************************* END OF ACD ***********************************************************************
+
+
+
+
+
+
+//show ATR
+// plot(not isDaily ? na: dailyATR[1], title="ATR", color=color.rgb(243, 177, 33))
+
+// log.info("monitor levels a:{0} , b:{1} d:{2}",levelUp,levelDown,d)
+// log.info("monitor today High:{0} , low:{1} opend: {2} , opHigh {3} , opLow {4}",openRangeHigh,openRangeLow, openingRangeEnd, openRangeHigh,openRangeLow)
