@@ -1,6 +1,9 @@
 
 //@version=6
 indicator("ACD", overlay=true,timeframe ="",format = format.price,timeframe_gaps =true)
+// Get current chart resolution in milliseconds
+isGreaterThan1D = (timeframe.period == "W" or timeframe.period == "M" or timeframe.period == "1D" or timeframe.period == "1W" or timeframe.period == "1M")
+
 // groups
 group1 = "Market Begin(hour/minute)"
 group2="Market Close (Hour/minute)"
@@ -10,15 +13,15 @@ group4="Show Pivots"
 isPivot=input.bool(false,'Show 3Days pivot','This is the 3 days pivot based on max high , max low and last closed,A=(max+low+closed)/3, B(max+low)/2, delta=|A-B|, up=A+d, down=A-d, level=A',group = group4)
 
 //************************************************ START TIME  input *****************************************************************
-startHour = input.int(8, title="Market Begin Hour(0-23)", minval=0, maxval=23,group = group1)
-startMinutes = input.int(0, title="Market Begin Minutes(0-59)", minval=0, maxval=59,group = group1)
+startHour = input.int(9, title="Market Begin Hour(0-23)", minval=0, maxval=23,group = group1)
+startMinutes = input.int(30, title="Market Begin Minutes(0-59)", minval=0, maxval=59,group = group1)
 
 //************************************************ ENd TIME  input *****************************************************************
-endHour = input.int(20, title="Market Close Hour(0-23)", minval=0, maxval=23,group = group2)
+endHour = input.int(16, title="Market Close Hour(0-23)", minval=0, maxval=23,group = group2)
 endMinutes = input.int(0, title="Market Close Minutes(0-59)", minval=0, maxval=59,group = group2)
 
 //************************************************ OP Range Input *****************************************************************
-opDuration = input(90, title="Opening Range",group = group3) // default is 15 minutes
+opDuration = input(9, title="Opening Range",group = group3) // default is 15 minutes
 
 //************************************************ ACD Level input *****************************************************************
 
@@ -47,21 +50,21 @@ if (newDay)
 if  beforeSession or afterSession
     openRangeHigh := na
     openRangeLow := na
-if (time >= startTime and time <= openingRangeEnd)
+if (time >= startTime and time <= openingRangeEnd and not isGreaterThan1D)
     openRangeHigh := na(openRangeHigh) ? high : math.max(openRangeHigh, high)
     openRangeLow := na(openRangeLow) ? low : math.min(openRangeLow, low)
 
 
 // Find ATR simle range and multiplies to A_weight
 dailyATR = request.security(syminfo.tickerid, "D", ta.atr(atrLength))
-
+log.error("atr {0}",dailyATR[1])
 
 //************************************************** define A  levels ********************************************************************
 
 A_LEVEL=dailyATR[1]*A_weight
 var float A_Up = na
 var float A_Down = na
-if (time > openingRangeEnd and not beforeSession and not afterSession)
+if (time >= startTime and time <= openingRangeEnd and not beforeSession and not afterSession and not isGreaterThan1D)
     A_Up := openRangeHigh + A_LEVEL
     A_Down := openRangeLow - A_LEVEL
 
@@ -69,7 +72,7 @@ if (time > openingRangeEnd and not beforeSession and not afterSession)
 C_Level=dailyATR[1]*C_weight
 var float C_Up = na
 var float C_Down = na
-if (time > openingRangeEnd and not (beforeSession and afterSession))
+if (time >= startTime and time <= openingRangeEnd and not (beforeSession and afterSession) and not isGreaterThan1D)
     C_Up := openRangeHigh + C_Level
     C_Down := openRangeLow - C_Level
 
@@ -81,14 +84,14 @@ t2= plot(( time >= openingRangeEnd and time <= endTime) ? openRangeLow : na, tit
 fill(t1, t2, color=color.rgb(156, 156, 156, 98)) 
 
 //******************************************* plot A levels ***************************************************************************************************** 
-a1=plot((time > openingRangeEnd and time <= endTime) ? A_Up : na, title="A^", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
-a2=plot((time > openingRangeEnd and time <= endTime) ? A_Down : na, title="A!", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
-fill(a1,a2, color=color.rgb(156, 156, 156, 94)) 
+a1=plot((time >= openingRangeEnd and time <= endTime) ? A_Up : na, title="A^", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
+a2=plot((time >= openingRangeEnd and time <= endTime) ? A_Down : na, title="A!", color=color.rgb(232, 211, 49), linewidth=1, style=plot.style_linebr)
+// fill(a1, a2, color=color.rgb(156, 156, 156, 98)) 
 
 //************************************************* PLOT C LEVELs ****************************************************************************************************
-c1=plot((time > openingRangeEnd and time <= endTime) ? C_Up : na, title="C^", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
-c2=plot((time > openingRangeEnd and time <= endTime) ? C_Down : na, title="C!", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
-fill(c1,c2, color=color.rgb(156, 156, 156, 94)) 
+c1=plot((time >= openingRangeEnd and time <= endTime) ? C_Up : na, title="C^", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
+c2=plot((time >= openingRangeEnd and time <= endTime) ? C_Down : na, title="C!", color=color.rgb(239, 238, 223), linewidth=2, style=plot.style_linebr)
+fill(c1, c2, color=color.rgb(156, 156, 156, 89)) 
 
 // ********************************************** 3 Days ACD Pivots  **************************************************************************
 
@@ -102,26 +105,36 @@ prevLow3 = request.security(syminfo.tickerid, "1D", low[3],lookahead = barmerge.
 prevClose = request.security(syminfo.tickerid, "1D", close[1],lookahead = barmerge.lookahead_on) // Close of the previous day
 
 //************************************************** Calculate Pivot Highest High and Lowest Low ********************************************************************
-highestHigh = math.max(prevHigh, math.max(prevHigh2, prevHigh3))  // Highest high from the last 3 days
-lowestLow = math.min(prevLow, math.min(prevLow2, prevLow3))       // Lowest low from the last 3 days
+var float highestHigh = na
+var float lowestLow = na
+if (time >= startTime and time <= openingRangeEnd and not (beforeSession and afterSession))
+    highestHigh := math.max(prevHigh, math.max(prevHigh2, prevHigh3))  // Highest high from the last 3 days
+    lowestLow := math.min(prevLow, math.min(prevLow2, prevLow3))       // Lowest low from the last 3 days
 
-// Calculate A, B, and d
-A = (highestHigh + lowestLow + prevClose) / 3
-B = (highestHigh + lowestLow) / 2
-d = math.abs(A - B)
+var float A=na
+var float B=na
+var float d=na
+if (time >= startTime and time <= openingRangeEnd and not (beforeSession and afterSession))   
+    // Calculate A, B, and d
+    A := (highestHigh + lowestLow + prevClose) / 3
+    B := (highestHigh + lowestLow) / 2
+    d := math.abs(A - B)
 //************************************************** Pivot (Level UP/Down and Set) ********************************************************************
-levelUp=A + d
-levelDown=A-d
-level=A
+var float level=na
+var float levelUp=na
+var float levelDown=na
+if (time >= startTime and time <= openingRangeEnd and not (beforeSession and afterSession))   
+    levelUp:=A + d
+    levelDown:=A-d
+    level:=A
 //*********** display conditions predicate ****************************
    
 
-plot( isPivot and (time > openingRangeEnd and time <= endTime) ? (A+d) : na, color=color.rgb(211, 224, 212, 68), linewidth=4, title="PV^", style=plot.style_steplinebr)
-plot(isPivot and (time > openingRangeEnd and time <= endTime) ? A : na, color=color.rgb(211, 224, 212, 82), linewidth=4, title="PV", style=plot.style_steplinebr)
-plot(isPivot and (time > openingRangeEnd and time <= endTime) ? (A-d) : na, color=color.rgb(211, 224, 212, 80), linewidth=4, title="Pv!", style=plot.style_steplinebr)
-
+p1=plot( isPivot and (time >= openingRangeEnd and time <= endTime) and not isGreaterThan1D ? levelUp : na, color=color.rgb(211, 224, 212, 68), linewidth=4, title="PV^", style=plot.style_linebr)
+p0=plot(isPivot and (time >= openingRangeEnd and time <= endTime) and not isGreaterThan1D ? level : na, color=color.rgb(211, 224, 212, 82), linewidth=4, title="PV", style=plot.style_linebr)
+p2= plot(isPivot and (time >= openingRangeEnd and time <= endTime) and not isGreaterThan1D ? levelDown : na, color=color.rgb(211, 224, 212, 80), linewidth=4, title="Pv!", style=plot.style_linebr)
 //******************************************************* END OF ACD ***********************************************************************
-
+// log.info("timeFrame {0}","hello")
 
 
 
