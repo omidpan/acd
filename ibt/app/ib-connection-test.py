@@ -19,4 +19,4 @@ class IBClient(EWrapper,EClient):
             print('Error {}: {}'.format(errorCode,errorString))
 
 # client
-client=IBClient('127.0.0.1',7497,2)
+client=IBClient('127.0.0.1',7497,3)
