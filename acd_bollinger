@@ -169,9 +169,9 @@ closeCandle_now = request.security(syminfo.tickerid, "5", close)
 a_up_signal = ta.crossover(closeCandle_now, A_Up)
 isBollinger_up=closeCandle_now>basis
 check_up=isBollinger_up and a_up_signal and time>=startTime and time<=endTime
-plotshape(isSignalling and check_up, location=location.belowbar,size = size.small,style = shape.labelup, color=color.white)
+plotshape(isSignalling and check_up, location=location.belowbar,size = size.tiny,style = shape.labelup, color=color.white)
 
 a_down_signal = ta.crossunder(closeCandle_now, A_Down)
 isBollinger_down=closeCandle_now<basis
 check_down=isBollinger_down and a_down_signal and time>=startTime and time<=endTime
-plotshape(isSignalling and check_down, location=location.abovebar,size = size.small,style = shape.labeldown, color=color.white)
+plotshape(isSignalling and check_down, location=location.abovebar,size = size.tiny,style = shape.labeldown, color=color.yellow)
