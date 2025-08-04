@@ -17,6 +17,7 @@ float movingAverage         = ta.sma(close, INPUT_MA_LENGTH)
 //! Variables
 var float tradeStopLoss     = na
 
+float highestHighest         = na
 //! Entry conditions
 bool canTakeTrade           = strategy.position_size == 0 and not na(atrValue) and not na(movingAverage)
 bool longEntryCondition     = ta.crossover(close, movingAverage) and barstate.isconfirmed
@@ -25,7 +26,7 @@ bool shortEntryCondition    = ta.crossunder(close, movingAverage) and barstate.i
 //! Exit conditions
 bool longExitCondition      = close < low[1] and barstate.isconfirmed
 bool shortExitCondition     = close > high[1] and barstate.isconfirmed
-
+// float lowestLowest            = ta.lowest(low, 10)
 //! Check entry conditions
 if (canTakeTrade)
     //! Reset SL/TP before placing a new trade
@@ -47,7 +48,8 @@ if (canTakeTrade)
         strategy.entry("Short", strategy.short)
         //! Calculate stop
         tradeStopLoss := close + slDistance
-
+//instead of adding takeprofit, we will check the conditions for exit
+//if we add limit=na to strategy.exit, it will not place a take profit order
 //! Long exit
 if (strategy.position_size > 0)
     //! LONG SL
@@ -55,6 +57,9 @@ if (strategy.position_size > 0)
     //! LONG EXIT CONDITION 
     if (longExitCondition)
         strategy.close("Long")
+        // different approach how to close the positions
+        // strategy.close("Long",qty_percent = 50)//using percentage to close the position_size
+        // strategy.close_all()        
 
 //! Short exit
 if (strategy.position_size < 0)
